@@ -21,12 +21,13 @@ app.post("/create-payment-intent", async (req, res) => {
     amount: calculateOrderAmount(items),
     currency: "usd"
   });
+  console.log("secret" + paymentIntent.client_secret)
 
   res.send({
     clientSecret: paymentIntent.client_secret
   });
 });
 
-app.listen(process.env.PORT, () => console.log('Node server listening'));
+app.listen(4242, () => console.log('Node server listening'));
 
 module.exports = app;
