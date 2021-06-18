@@ -5,7 +5,7 @@ const Sequelize = require("sequelize")
 
 module.exports = (sequelize, DataTypes) => {
     const Invoice = sequelize.define('invoice', {
-        itemID : {
+        invoiceNumber : {
             type: Sequelize.INTEGER,
             autoIncrement: true,
             primaryKey: true,

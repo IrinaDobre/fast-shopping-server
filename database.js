@@ -15,15 +15,17 @@ const sequelize = new Sequelize(database, username, password, {
 })
 
 const tables = {
-    Client : require('./models/client')(sequelize),
-    CreditCard: require('./models/creditCard')(sequelize),
-    ShoppingList: require('./models/shoppingList')(sequelize),
-    ShoppingListItem: require('./models/shoppingListItem')(sequelize),
-    ShoppingCart: require('./models/shoppingCart')(sequelize),
-    Invoice: require('./models/invoice')(sequelize),
-    Shop: require('./models/shop')(sequelize),
-    Product: require('./models/product')(sequelize),
-    CartItem: require('./models/cartItem')(sequelize)
+    Client : require('./models/Client')(sequelize),
+    CreditCard: require('./models/CreditCard')(sequelize),
+    ShoppingList: require('./models/ShoppingList')(sequelize),
+    ShoppingListItem: require('./models/ShoppingListItem')(sequelize),
+    ShoppingCart: require('./models/ShoppingCart')(sequelize),
+    Invoice: require('./models/Invoice')(sequelize),
+    Shop: require('./models/Shop')(sequelize),
+    Product: require('./models/Product')(sequelize),
+    CartItem: require('./models/CartItem')(sequelize),
+    Voucher: require('./models/Voucher')(sequelize),
+    ClientVoucher: require('./models/ClientVoucher')(sequelize),
 }
 
 tables.Client.hasMany(tables.CreditCard);
@@ -32,9 +34,13 @@ tables.Client.hasMany(tables.ShoppingCart);
 tables.ShoppingList.hasMany(tables.ShoppingListItem)
 tables.ShoppingCart.hasOne(tables.Invoice)
 tables.ShoppingCart.hasMany(tables.CartItem)
-tables.Invoice.hasMany(tables.Shop)
+tables.Shop.hasMany(tables.Invoice)
 tables.Shop.hasMany(tables.Product)
+tables.Shop.hasMany(tables.Voucher)
 tables.Product.hasMany(tables.CartItem)
+tables.Voucher.hasMany(tables.ClientVoucher)
+tables.Client.hasMany(tables.ClientVoucher)
+
 
 // mysql -u root -p
 // 12345678

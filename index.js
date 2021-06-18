@@ -1,5 +1,7 @@
 const express = require("express");
 const bodyParser = require('body-parser')
+const userRoutes = require('./routes/user_route.js')
+
 const app = express();
 // This is a sample test API key. Sign in to see examples pre-filled with your key.
 const stripe = require("stripe")("sk_test_51IxIZyCZBtHrKicBBEe21P2ZI1BKibmMw9vNa53ONTGvn5rbP6I2aGOSDZz3GzAPD4usOXbIlyvvQ4CnFaEdvlCq006cjx4CiE");
@@ -16,6 +18,7 @@ const calculateOrderAmount = items => {
 
 app.post("/create-payment-intent", async (req, res) => {
   const { items } = req.body;
+  console.log("test")
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
     amount: calculateOrderAmount(items),
@@ -28,6 +31,9 @@ app.post("/create-payment-intent", async (req, res) => {
   });
 });
 
-app.listen(4242, () => console.log('Node server listening'));
+app.use("/user", userRoutes)
 
+
+app.listen(8080, () => console.log('Node server listening on port ' + 8080));
+s
 module.exports = app;

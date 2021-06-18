@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
             autoIncrement: true,
             primaryKey: true
         },
-        cardNumer : {
+        cardNumber : {
             type: Sequelize.STRING(255),
             allowNull : false,
         },
@@ -23,11 +23,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull : false,
         },
         cardHolder : {
-            type: Sequelize.STRING(10),
+            type: Sequelize.STRING(255),
             allowNull : false,
         },
         CVV : {
-            type: Sequelize.STRING(10),
+            type: Sequelize.STRING(255),
             allowNull : false,
         }
     })

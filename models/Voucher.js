@@ -4,20 +4,24 @@ const { sequelize } = require("../database.js");
 const Sequelize = require("sequelize")
 
 module.exports = (sequelize, DataTypes) => {
-    const ShoppingCart = sequelize.define('shoppingCart', {
-        cartId : {
+    const Voucher = sequelize.define('voucher', {
+        voucherId : {
             type: Sequelize.INTEGER,
             autoIncrement: true,
             primaryKey: true
         },
-        totalToPay : {
+        value : {
             type: Sequelize.DOUBLE,
             allowNull : false,
         },
-        totalProducts : {
-            type: Sequelize.INTEGER,
+        startDate : {
+            type: Sequelize.STRING(20),
+            allowNull : false
+        },
+        endDate : {
+            type: Sequelize.STRING(20),
             allowNull : false
         }
     })
-    return ShoppingCart
+    return Voucher
 }
