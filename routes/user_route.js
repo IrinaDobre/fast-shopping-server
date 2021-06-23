@@ -55,7 +55,7 @@ router.post('/create-user', async(req, res, next) => {
     }
 })
 
-// check is user exists
+// check if user exists
 router.get("/login", async(req, res, next) => {
     try {
         if (Object.entries(req.query).length != 0 && req.query.email !== undefined && req.query.email !== '' && req.query.password !== undefined && req.query.password !== '') {
@@ -129,10 +129,14 @@ router.put('/change-password', async(req, res, next) => {
 })
 
 // add credit card to user
-router.post('/create-credit-card', async(req, res, next) => {
+router.post('/create-credit-card/add', async(req, res, next) => {
     try {
         if (validateCreditCardInfo(req) && req.query && req.query.email !== null && req.query.email !== '') {
+            console.log("-------")
+            console.log(req.query.email)
             let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            console.log("+_+_+_+_+_")
+            console.log(client.email)
             if(client != null) {
                 let creditCards = await tables.CreditCard.findAll({ where: { clientCliendID: client.cliendID } })
                 let cardCardMatch
@@ -143,16 +147,16 @@ router.post('/create-credit-card', async(req, res, next) => {
                     }
                 }
                 if(cardCardMatch) {
-                    // exista credit card
+                    // exists credit card
                     res.status(409).json({
                         Message: "Credit card already exists",
                         statusCode: 409
                     })
                 } else {
-                    // nu exista credit card
+                    // credit card does not exist
                     const cardNumberHash = bcrypt.hashSync(req.body.cardNumber, saltRounds);
                     const cardHolderHash = bcrypt.hashSync(req.body.cardHolder, saltRounds);
-                    const CVVHash = bcrypt.hashSync(req.body.CVV, saltRounds);
+                    const CVVHash = bcrypt.hashSync(req.body.CVV.toString(), saltRounds);
                     await tables['CreditCard'].create({ 
                         cardNumber: cardNumberHash, 
                         cardType: req.body.cardType , 
