@@ -132,13 +132,9 @@ router.put('/change-password', async(req, res, next) => {
 router.post('/create-credit-card/add', async(req, res, next) => {
     try {
         if (validateCreditCardInfo(req) && req.query && req.query.email !== null && req.query.email !== '') {
-            console.log("-------")
-            console.log(req.query.email)
             let client = await tables.Client.findOne({ where: { email: req.query.email } })
-            console.log("+_+_+_+_+_")
-            console.log(client.email)
             if(client != null) {
-                let creditCards = await tables.CreditCard.findAll({ where: { clientCliendID: client.cliendID } })
+                let creditCards = await tables.CreditCard.findAll({ where: { clientClientID: client.clientID } })
                 let cardCardMatch
                 for(var i = 0; i < creditCards.length; i++){
                     cardCardMatch = bcrypt.compareSync(req.body.cardNumber, creditCards[i].cardNumber)
@@ -154,16 +150,16 @@ router.post('/create-credit-card/add', async(req, res, next) => {
                     })
                 } else {
                     // credit card does not exist
-                    const cardNumberHash = bcrypt.hashSync(req.body.cardNumber, saltRounds);
-                    const cardHolderHash = bcrypt.hashSync(req.body.cardHolder, saltRounds);
-                    const CVVHash = bcrypt.hashSync(req.body.CVV.toString(), saltRounds);
+                    // const cardNumberHash = bcrypt.hashSync(req.body.cardNumber, saltRounds);
+                    // const cardHolderHash = bcrypt.hashSync(req.body.cardHolder, saltRounds);
+                    // const CVVHash = bcrypt.hashSync(req.body.CVV, saltRounds);
                     await tables['CreditCard'].create({ 
-                        cardNumber: cardNumberHash, 
+                        cardNumber: req.body.cardNumber, 
                         cardType: req.body.cardType , 
                         validDate: req.body.validDate,
-                        cardHolder: cardHolderHash,
-                        CVV: CVVHash,
-                        clientCliendID: client.cliendID
+                        cardHolder: req.body.cardHolder,
+                        CVV: req.body.CVV,
+                        clientClientID: client.clientID
                     })
                         res.status(201).json({
                         Message: "Resource created",
@@ -191,7 +187,472 @@ router.post('/create-credit-card/add', async(req, res, next) => {
 })
 
 
-module.exports = router
+//get all cards for one user
+router.get("/:userEmail/creditCards", async(req, res, next) => {
+    try{
+        await tables['Client'].findOne({
+            where : {
+                email : req.params.userEmail
+            }
+        }).then(user => {
+            if(user){
+                tables.CreditCard.findAll({
+                    where: {
+                        clientClientID : user.clientID
+                    }
+                }).then(items => {
+                    let array = [];
+                    for (var i = 0 ; i < items.length; i++) {
+                        array.push(items[i].dataValues)
+                    }                    
+                    res.status(200).json( array);
+                })
+            }else{
+                res.status(404).json({Message : "Username doesn't exists"})
+            }
+        })
+    }catch(error){
+        console.warn(error)
+        res.status(500).json({Message : "Server error"})
+    }
+})
+
+
+// delete credit card from user
+router.delete('/credit-card/delete', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query && req.query.cardNumber !== null && req.query.cardNumber !== '') {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                tables.CreditCard.destroy({ where: { clientClientID: client.clientID, cardNumber: req.query.cardNumber} })
+                    .then(() => {
+                        res.status(200).json("Resource deleted")
+                    })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+
+// create shopping list
+router.post('/create-shopping-list', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.shoppingListName) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                await tables['ShoppingList'].create({ 
+                    name: req.query.shoppingListName, 
+                    numberOfItems: 0 , 
+                    status: 0,
+                    clientClientID: client.clientID
+                }).then(createdShoppingList => {
+                    res.status(201).json(createdShoppingList)
+                })
+                
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+// add item to shopping list 
+router.post('/shopping-list/add-item', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.shoppingListID) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                await tables['ShoppingListItem'].create({ 
+                    itemName: req.body.itemName, 
+                    quantity: req.body.quantity , 
+                    unitType: req.body.unitType,
+                    bought: req.body.bought,
+                    shoppingListShoppingListID: req.query.shoppingListID
+                }).then(createdItem => {
+                    res.status(201).json(createdItem)
+                })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+
+
+// remove item from shopping list 
+router.delete('/shopping-list/remove-item', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.shoppingListID && req.query.itemName) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                await tables['ShoppingListItem'].destroy({ where: { shoppingListShoppingListID: req.query.shoppingListID, itemName: req.query.itemName} })
+                .then(() => {
+                    res.status(200).json({Message : "Resource deleted"})
+                })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+// update item from shopping list 
+router.put('/shopping-list/update-item', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.shoppingListID && req.query.itemName) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                currentShoppingListItem = await tables['ShoppingListItem'].findOne({ where: { shoppingListShoppingListID: req.query.shoppingListID, itemName: req.query.itemName} })
+                currentShoppingListItem.update(
+                    {
+                        itemName: req.body.itemName, 
+                        quantity: req.body.quantity , 
+                        unitType: req.body.unitType,
+                        bought: req.body.bought,
+                    })
+                .then(updatedItem => {
+                    res.status(200).json(updatedItem)
+                })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+
+
+// delete shopping list and the items inside
+router.delete('/shopping-list/delete-shopping-list', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.shoppingListID) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                await tables['ShoppingListItem'].destroy({ where: { shoppingListShoppingListID: req.query.shoppingListID} })
+                .then(() => {
+                    tables['ShoppingList'].destroy({ where: { shoppingListID: req.query.shoppingListID, clientClientID: client.clientID} })
+                    .then(() => {
+                        res.status(200).json({Message : "Resource deleted"})
+                    })
+                })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+
+// add multimple items to shopping list 
+router.post('/shopping-list/add-multiple-items', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.shoppingListID) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                for(let i = 0; i < req.body.length; i++) {
+                    req.body[i]['shoppingListShoppingListID'] = req.query.shoppingListID
+                }
+                await tables['ShoppingListItem']
+                    .bulkCreate(req.body)
+                    .then(() => {
+                        res.status(201).json({Message: "Resource created!"})
+                    })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+// create cart 
+router.post('/create-shopping-cart', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '') {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                await tables['ShoppingCart'].create({ 
+                    totalToPay: 0.0, 
+                    totalProducts: 0 , 
+                    clientClientID: client.clientID
+                }).then(createdShoppingCart => {
+                    let jsonObject = {}
+                    jsonObject['idCart'] = createdShoppingCart.cartId
+                    jsonObject['totalToPaid'] = createdShoppingCart.totalToPaid
+                    jsonObject['totalProducts'] = createdShoppingCart.totalProducts,
+                    jsonObject['cartItemList'] = []
+                    res.status(201).json(jsonObject)
+                })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+// update cart 
+router.put('/update-shopping-cart', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.cartID) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                let cart = await tables['ShoppingCart'].findOne({where: {clientClientID: client.clientID, cartId: req.query.cartID}})
+                cart
+                    .update({
+                        totalToPay: req.body.totalToPay,
+                        totalProducts: req.body.totalProducts
+                    })
+                    .then(createdShoppingCart => {
+                        res.status(201).json("updated")
+                    })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+
+// add multimple items to  cart 
+router.post('/shopping-cart/add-multiple-cart-items', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email !== null && req.query.email !== '' && req.query.cartID) {
+            let client = await tables.Client.findOne({ where: { email: req.query.email } })
+            if(client != null) {
+                for(let i = 0; i < req.body.length; i++) {
+                    req.body[i]['shoppingCartCartId'] = req.query.cartID
+                    req.body[i]['productProductID'] = req.body[i]['product']['productID']
+                }
+                await tables['CartItem']
+                    .bulkCreate(req.body)
+                    .then(() => { 
+                        res.status(201).json("Resource created!")
+                    })
+            } else {
+                res.status(404).json({
+                    Message: "User not found",
+                    statusCode: 409
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+// create invoice 
+router.post('/create-invoice', async(req, res, next) => {
+    try {
+        if (req.query && req.query.cartID && req.query.shopID) {
+            await tables['Invoice'].create({ 
+                date: "26/06/2021", 
+                shoppingCartCartId: req.query.cartID , 
+                shopShopID: req.query.shopID
+            }).then(createdInvoice => {
+                res.status(201).json(createdInvoice)
+            })
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
+
+// get all invoices 
+router.get('/invoice/get-all', async(req, res, next) => {
+    try {
+        if (req.query && req.query.email && req.query.shopID) {
+            let client = await tables['Client'].findOne({where: {email: req.query.email}})
+            let shop = await tables['Shop'].findOne({where: {shopID: req.query.shopID}})
+            if(client != null){
+                let carts = await tables['ShoppingCart'].findAll({where: {clientClientID: client.clientID}})
+                if(carts == null) {
+                    res.status(200).json([]);
+                } else {
+                    let jsonList = []
+                    for(let i = 0; i < carts.length; i++) {
+                        let cartItems = await tables['CartItem'].findAll({where: {shoppingCartCartId: carts[i].cartId}})
+                        let jsonListCartItems = []
+                        for(let j = 0; j < cartItems.length; j++) {
+                            let jsonCartItem = {}
+                            jsonCartItem['itemCardID'] = cartItems[j].itemCardID
+                            jsonCartItem['quantity'] = cartItems[j].quantity
+                            jsonCartItem['productProductID'] = cartItems[j].productProductID
+                            let product = await tables['Product'].findOne({where: {productID: cartItems[j].productProductID}})
+                            jsonCartItem['product'] = product
+                            jsonListCartItems.push(jsonCartItem)
+                        }
+                        let invoice = await tables['Invoice'].findOne({where: {shoppingCartCartId: carts[i].cartId, shopShopID: req.query.shopID}})
+                        let json = {}
+                        json['invoiceNumber'] = invoice.invoiceNumber
+                        json['date'] = invoice.date
+                        json['shop'] = shop
+                        json['cart'] = carts[i]
+                        json['cartItems'] = jsonListCartItems
+                        jsonList.push(json)
+                    }
+                    res.status(200).json(jsonList)
+                }
+            } else {
+                res.status(404).json({
+                    Message: "User not found!",
+                    statusCode: 404
+                })
+            }
+        }
+        else {
+            res.status(400).json({
+                Message: "Bad request",
+                statusCode: 400
+            })
+        }
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ Message: "Server error" })
+    }
+})
 
 function validateCreditCardInfo(req) {
     return req.body.cardNumber && req.body.cardNumber !== null &&
@@ -209,3 +670,5 @@ function validateCreditCardInfo(req) {
         req.body.CVV != null &&
         req.body.CVV !== '';
 }
+
+module.exports = router

@@ -5,7 +5,7 @@ const Sequelize = require("sequelize")
 
 module.exports = (sequelize, DataTypes) => {
     const Client = sequelize.define('client', {
-        cliendID : {
+        clientID : {
             type: Sequelize.INTEGER,
             autoIncrement: true,
             primaryKey: true
